@@ -1,0 +1,4 @@
+SPA/node_modules
+WebApi/node_modules
+SPA/package-lock.json
+WebApi/package-lock.json
