@@ -2,3 +2,5 @@ SPA/node_modules
 WebApi/node_modules
 SPA/package-lock.json
 WebApi/package-lock.json
+strapi/node_modules
+strapi/package-lock.json
