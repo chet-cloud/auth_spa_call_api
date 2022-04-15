@@ -4,7 +4,7 @@
  */
 
 const express = require("express");
-const https = require('https');
+const axios = require('axios');
 const msal = require('@azure/msal-node');
 const jwt = require('jsonwebtoken')
 const jwksClient = require('jwks-rsa');
@@ -85,41 +85,35 @@ const getSigningKeys = (header, callback) => {
 }
 
 
-app.get('/obo', validateJwt, (req, res) => {
+app.get('/obo', validateJwt, async (req, res) => {
     const authHeader = req.headers.authorization;
 
     const oboRequest = {
         oboAssertion: authHeader.split(' ')[1],
         scopes: ["user.read"],
     }
-    cca.acquireTokenOnBehalfOf(oboRequest).then((response) => {
-        console.log(response);
-        callGraph(response.accessToken, (graphResponse) => {
-            res.status(200).send(graphResponse);
-        });
-    }).catch((error) => {
+
+    try {
+        const response = await cca.acquireTokenOnBehalfOf(oboRequest);
+        const result = await callGraph(response.accessToken)
+        res.status(200).send(result);
+    }catch(e){
         res.status(500).send(error);
-    });
+    }
 });
 
-const callGraph = (accessToken, callback) => {
+
+const callGraph = async (accessToken) => {
     const options = {
+        url: "https://graph.microsoft.com/v1.0/me",
         method: 'GET',
         headers: {
             'Authorization': 'Bearer ' + accessToken,
         }
     };
 
-    const req = https.request(new URL("https://graph.microsoft.com/v1.0/me"), options, (res) => {
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            callback(chunk);
-        });
-    });
-    req.on('error', (err) => {
-        console.log(err);
-    });
-    req.end();
+    const response = await axios(options);
+    return response.data;
 }
 
 app.listen(SERVER_PORT, () => console.log(`Msal Node Web API listening on port ${SERVER_PORT}!`))
