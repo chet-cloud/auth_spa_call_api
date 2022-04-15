@@ -58,6 +58,13 @@
         crossorigin="anonymous"></script>
 
     <script>
+
+        const ENTER_WEB_API_CLIENT_ID = "32e55f70-2806-4812-aa76-6e4011e324e4"
+        const TENANT_INFO = "86311f94-5e8c-4209-8693-51c003d5112e"
+        const CLIENT_ID = "c4c81f60-345c-4b42-bd71-99677b746c36"
+        const API = "http://localhost:8000/obo"
+        const SCOPES = [`api://${ENTER_WEB_API_CLIENT_ID}/access_as_user`]
+
         /**
          * Configuration object to be passed to MSAL instance on creation. 
          * For a full list of MSAL.js configuration parameters, visit:
@@ -65,8 +72,8 @@
          */
         const msalConfig = {
             auth: {
-                clientId: "c4c81f60-345c-4b42-bd71-99677b746c36",
-                authority: "https://login.microsoftonline.com/86311f94-5e8c-4209-8693-51c003d5112e",
+                clientId: `${CLIENT_ID}`,
+                authority: `https://login.microsoftonline.com/${TENANT_INFO}`,
                 redirectUri: "/",
             },
             cache: {
@@ -77,8 +84,8 @@
 
         // Add here the endpoints and scopes for the web API you would like to use.
         const apiConfig = {
-            uri: "http://localhost:5000/api", // e.g. http://localhost:5000/api
-            scopes: ["api://ea678c9f-a48d-4976-a6ec-ede3becfc1ec/access_as_user"] // e.g. ["scp1", "scp2"]
+            uri: `${API}`, // e.g. http://localhost:5000/api
+            scopes: SCOPES // e.g. ["scp1", "scp2"]
         };
 
         /**
@@ -209,22 +216,22 @@
 
         selectAccount();
 
-        function getTokenPopup(request) {
 
-            /**
+        function passTokenToApi() {
+                        /**
             * See here for more information on account retrieval: 
             * https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-common/docs/Accounts.md
             */
 
-            request.account = myMSALObj.getAccountByUsername(username);
+            tokenRequest.account = myMSALObj.getAccountByUsername(username);
 
-            return myMSALObj.acquireTokenSilent(request)
+            return myMSALObj.acquireTokenSilent(tokenRequest)
                 .catch(error => {
                     console.warn(error);
                     console.warn("silent token acquisition fails. acquiring token using popup");
                     if (error instanceof msal.InteractionRequiredAuthError) {
                         // fallback to interaction when silent call fails
-                        return myMSALObj.acquireTokenPopup(request)
+                        return myMSALObj.acquireTokenPopup(tokenRequest)
                             .then(response => {
                                 console.log(response);
                                 return response;
@@ -234,12 +241,7 @@
                     } else {
                         console.warn(error);
                     }
-                });
-        }
-
-        function passTokenToApi() {
-            getTokenPopup(tokenRequest)
-                .then(response => {
+                }).then(response => {
                     if (response) {
                         console.log("access_token acquired at: " + new Date().toString());
                         try {
@@ -268,11 +270,9 @@
             fetch(endpoint, options)
                 .then(response => response.json())
                 .then(response => {
-
                     if (response) {
-                        logMessage('Web API responded: Hello ' + response['name'] + '!');
+                        logMessage(JSON.stringify(response) );
                     }
-
                     return response;
                 }).catch(error => {
                     console.error(error);

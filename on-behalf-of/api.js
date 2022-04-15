@@ -43,6 +43,13 @@ const cca = new msal.ConfidentialClientApplication(config);
 // Create Express App and Routes
 const app = express();
 
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Authorization, Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+
+
 const validateJwt = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader) {
@@ -77,6 +84,7 @@ const getSigningKeys = (header, callback) => {
     });
 }
 
+
 app.get('/obo', validateJwt, (req, res) => {
     const authHeader = req.headers.authorization;
 
@@ -84,7 +92,6 @@ app.get('/obo', validateJwt, (req, res) => {
         oboAssertion: authHeader.split(' ')[1],
         scopes: ["user.read"],
     }
-
     cca.acquireTokenOnBehalfOf(oboRequest).then((response) => {
         console.log(response);
         callGraph(response.accessToken, (graphResponse) => {
