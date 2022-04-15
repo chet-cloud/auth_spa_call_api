@@ -50,28 +50,26 @@ app.use((req, res, next) => {
 });
 
 
-const validateJwt = (req, res, next) => {
-    const authHeader = req.headers.authorization;
+function validate(authHeader){
     if (authHeader) {
         const token = authHeader.split(' ')[1];
-        
         const validationOptions = {
             audience: config.auth.clientId, // v2.0 token
             issuer: config.auth.authority + "/v2.0" // v2.0 token
         }
-
-        jwt.verify(token, getSigningKeys, validationOptions, (err, payload) => {
-            if (err) {
-                console.log(err);
-                return res.sendStatus(403);
-            }
-
-            next();
-        });
+        return new Promise((resolve, reject) => {
+            jwt.verify(token, getSigningKeys, validationOptions, (err, payload) => {
+                if (err) {
+                    reject({code:403,error:err})
+                }
+                resolve(payload)
+            });
+          })
     } else {
-        res.sendStatus(401);
+        return new Promise.reject({code:401})
     }
-};
+}
+
 
 const getSigningKeys = (header, callback) => {
     var client = jwksClient({
@@ -85,8 +83,13 @@ const getSigningKeys = (header, callback) => {
 }
 
 
-app.get('/obo', validateJwt, async (req, res) => {
+app.get('/obo', async (req, res) => {
     const authHeader = req.headers.authorization;
+    try {
+        await validate(authHeader)
+    }catch(e){
+        res.status(e.code).send(e.error);
+    }
 
     const oboRequest = {
         oboAssertion: authHeader.split(' ')[1],
